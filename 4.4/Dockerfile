@@ -6,12 +6,12 @@ RUN groupadd -r mongodb && useradd -r -g mongodb mongodb
 RUN set -eux; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
-		ca-certificates \
-		jq \
-		numactl \
+	ca-certificates \
+	jq \
+	numactl \
 	; \
 	if ! command -v ps > /dev/null; then \
-		apt-get install -y --no-install-recommends procps; \
+	apt-get install -y --no-install-recommends procps; \
 	fi; \
 	rm -rf /var/lib/apt/lists/*
 
@@ -25,14 +25,14 @@ RUN set -ex; \
 	savedAptMark="$(apt-mark showmanual)"; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
-		wget \
+	wget \
 	; \
 	if ! command -v gpg > /dev/null; then \
-		apt-get install -y --no-install-recommends gnupg dirmngr; \
-		savedAptMark="$savedAptMark gnupg dirmngr"; \
+	apt-get install -y --no-install-recommends gnupg dirmngr; \
+	savedAptMark="$savedAptMark gnupg dirmngr"; \
 	elif gpg --version | grep -q '^gpg (GnuPG) 1\.'; then \
-# "This package provides support for HKPS keyservers." (GnuPG 1.x only)
-		apt-get install -y --no-install-recommends gnupg-curl; \
+	# "This package provides support for HKPS keyservers." (GnuPG 1.x only)
+	apt-get install -y --no-install-recommends gnupg-curl; \
 	fi; \
 	rm -rf /var/lib/apt/lists/*; \
 	\
@@ -46,13 +46,13 @@ RUN set -ex; \
 	rm -r "$GNUPGHOME" /usr/local/bin/gosu.asc; \
 	\
 	wget -O /js-yaml.js "https://github.com/nodeca/js-yaml/raw/${JSYAML_VERSION}/dist/js-yaml.js"; \
-# TODO some sort of download verification here
+	# TODO some sort of download verification here
 	\
 	apt-mark auto '.*' > /dev/null; \
 	apt-mark manual $savedAptMark > /dev/null; \
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
 	\
-# smoke test
+	# smoke test
 	chmod +x /usr/local/bin/gosu; \
 	gosu --version; \
 	gosu nobody true
@@ -63,7 +63,7 @@ ENV GPG_KEYS 20691EEC35216C63CAF66CE1656408E390CFB1F5
 RUN set -ex; \
 	export GNUPGHOME="$(mktemp -d)"; \
 	for key in $GPG_KEYS; do \
-		gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
+	gpg --batch --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys "$key"; \
 	done; \
 	gpg --batch --export $GPG_KEYS > /etc/apt/trusted.gpg.d/mongodb.gpg; \
 	command -v gpgconf && gpgconf --kill all || :; \
@@ -79,22 +79,22 @@ ARG MONGO_REPO=repo.mongodb.org
 ENV MONGO_PACKAGE=${MONGO_PACKAGE} MONGO_REPO=${MONGO_REPO}
 
 ENV MONGO_MAJOR 4.4
-ENV MONGO_VERSION 4.4.1
+ENV MONGO_VERSION 4.4.0
 # bashbrew-architectures:amd64 arm64v8 s390x
 RUN echo "deb http://$MONGO_REPO/apt/ubuntu bionic/${MONGO_PACKAGE%-unstable}/$MONGO_MAJOR multiverse" | tee "/etc/apt/sources.list.d/${MONGO_PACKAGE%-unstable}.list"
 
 RUN set -x \
-# installing "mongodb-enterprise" pulls in "tzdata" which prompts for input
+	# installing "mongodb-enterprise" pulls in "tzdata" which prompts for input
 	&& export DEBIAN_FRONTEND=noninteractive \
 	&& apt-get update \
-# starting with MongoDB 4.3, the postinst for server includes "systemctl daemon-reload" (and we don't have "systemctl")
+	# starting with MongoDB 4.3, the postinst for server includes "systemctl daemon-reload" (and we don't have "systemctl")
 	&& ln -s /bin/true /usr/local/bin/systemctl \
 	&& apt-get install -y \
-		${MONGO_PACKAGE}=$MONGO_VERSION \
-		${MONGO_PACKAGE}-server=$MONGO_VERSION \
-		${MONGO_PACKAGE}-shell=$MONGO_VERSION \
-		${MONGO_PACKAGE}-mongos=$MONGO_VERSION \
-		${MONGO_PACKAGE}-tools=$MONGO_VERSION \
+	${MONGO_PACKAGE}=$MONGO_VERSION \
+	${MONGO_PACKAGE}-server=$MONGO_VERSION \
+	${MONGO_PACKAGE}-shell=$MONGO_VERSION \
+	${MONGO_PACKAGE}-mongos=$MONGO_VERSION \
+	${MONGO_PACKAGE}-tools=$MONGO_VERSION \
 	&& rm -f /usr/local/bin/systemctl \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& rm -rf /var/lib/mongodb \
@@ -104,8 +104,8 @@ RUN mkdir -p /data/db /data/configdb \
 	&& chown -R mongodb:mongodb /data/db /data/configdb
 VOLUME /data/db /data/configdb
 
-COPY docker-entrypoint.sh /usr/local/bin/
-ENTRYPOINT ["docker-entrypoint.sh"]
+USER mongodb
 
 EXPOSE 27017
+
 CMD ["mongod"]
